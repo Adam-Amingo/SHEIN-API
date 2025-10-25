@@ -1,0 +1,123 @@
+Imports System.Math
+
+Public Class Form1
+
+    ' === Function definitions ===
+    Private Function f(x As Double) As Double
+        Return Cos(x) - x
+    End Function
+
+    Private Function f_prime(x As Double) As Double
+        Return -Sin(x) - 1
+    End Function
+
+    ' === Form Load ===
+    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        cmbMethod.Items.Add("Newton-Raphson")
+        cmbMethod.Items.Add("Secant")
+        cmbMethod.SelectedIndex = 0
+        SetupDataGrid()
+    End Sub
+
+    Private Sub SetupDataGrid()
+        dgvResults.Rows.Clear()
+        dgvResults.Columns.Clear()
+        dgvResults.Columns.Add("colIteration", "Iteration")
+        dgvResults.Columns.Add("colX", "X")
+        dgvResults.Columns.Add("colFX", "f(X)")
+    End Sub
+
+    ' === Solve Button ===
+    Private Sub btnSolve_Click(sender As Object, e As EventArgs) Handles btnSolve.Click
+        dgvResults.Rows.Clear()
+        txtSummary.Text = ""
+
+        Try
+            Dim method As String = cmbMethod.SelectedItem.ToString()
+            Dim x0 As Double = Double.Parse(txtX0.Text)
+            Dim tol As Double = Double.Parse(txtTolerance.Text)
+            Dim maxIter As Integer = Integer.Parse(txtMaxIter.Text)
+
+            If method = "Newton-Raphson" Then
+                NewtonRaphson(x0, tol, maxIter)
+            ElseIf method = "Secant" Then
+                Dim x1 As Double = Double.Parse(txtX1.Text)
+                SecantMethod(x0, x1, tol, maxIter)
+            End If
+
+        Catch ex As Exception
+            MessageBox.Show("Error: " & ex.Message)
+        End Try
+    End Sub
+
+    ' === Clear Button ===
+    Private Sub btnClear_Click(sender As Object, e As EventArgs) Handles btnClear.Click
+        txtX0.Clear()
+        txtX1.Clear()
+        txtTolerance.Clear()
+        txtMaxIter.Clear()
+        txtSummary.Clear()
+        dgvResults.Rows.Clear()
+    End Sub
+
+    ' === Newton-Raphson Method ===
+    Private Sub NewtonRaphson(p0 As Double, tol As Double, maxIter As Integer)
+        Dim i As Integer = 1
+        Dim p As Double
+
+        While i <= maxIter
+            Dim fp0 = f(p0)
+            Dim fprime = f_prime(p0)
+
+            If fprime = 0 Then
+                txtSummary.Text = "Derivative is zero. Method failed."
+                Return
+            End If
+
+            p = p0 - fp0 / fprime
+            dgvResults.Rows.Add(i, p.ToString("F10"), f(p).ToString("F10"))
+
+            If Abs(p - p0) < tol Then
+                txtSummary.Text = $"Converged at iteration {i} with x = {p:F10}"
+                Return
+            End If
+
+            p0 = p
+            i += 1
+        End While
+
+        txtSummary.Text = "Method failed after " & maxIter & " iterations."
+    End Sub
+
+    ' === Secant Method ===
+    Private Sub SecantMethod(p0 As Double, p1 As Double, tol As Double, maxIter As Integer)
+        Dim q0 = f(p0)
+        Dim q1 = f(p1)
+        Dim p As Double
+        Dim i As Integer = 2
+
+        While i <= maxIter
+            If q1 - q0 = 0 Then
+                txtSummary.Text = "Division by zero. Method failed."
+                Return
+            End If
+
+            p = p1 - q1 * (p1 - p0) / (q1 - q0)
+            dgvResults.Rows.Add(i, p.ToString("F10"), f(p).ToString("F10"))
+
+            If Abs(p - p1) < tol Then
+                txtSummary.Text = $"Converged at iteration {i} with x = {p:F10}"
+                Return
+            End If
+
+            p0 = p1
+            q0 = q1
+            p1 = p
+            q1 = f(p)
+            i += 1
+        End While
+
+        txtSummary.Text = "Method failed after " & maxIter & " iterations."
+    End Sub
+
+End Class
